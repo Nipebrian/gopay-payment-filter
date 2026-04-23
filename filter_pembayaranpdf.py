@@ -1,12 +1,3 @@
-"""
-=============================================================
- SISTEM FILTER FOTO BUKTI PEMBAYARAN GOPAY
- Memfilter foto bukti pembayaran berdasarkan kriteria:
- 1. Penerima = GoPay (e-wallet)
- 2. Teks mengandung "PB MPKMB DRAMAGA"
-=============================================================
-"""
-
 import os
 import sys
 import shutil
@@ -18,72 +9,53 @@ from pyzbar.pyzbar import decode as decode_qr
 import easyocr
 import fitz  # PyMuPDF
 
-# ===================== KONFIGURASI =====================
-
-# Kata kunci untuk mendeteksi GoPay sebagai penerima (exact phrases)
 GOPAY_RECEIVER_KEYWORDS = [
     "ditransfer ke gopay", "penerima gopay", "penerima: gopay",
     "ke gopay", "tujuan gopay", "tujuan: gopay", "transfer ke gopay"
 ]
 
-# Kata kunci untuk GoPay secara umum
 GOPAY_GENERAL = ["gopay", "go-pay", "go pay", "g0pay"]
 
-# Kata kunci indikasi pengirim GoPay (harus dihindari jika ingin mencari penerima GoPay)
 GOPAY_SENDER_KEYWORDS = [
     "pengirim gopay", "dari gopay", "dari: gopay", 
     "metode pembayaran gopay", "sumber dana gopay"
 ]
 
-# Kata kunci untuk mendeteksi PB MPKMB DRAMAGA
 MPKMB_KEYWORDS = [
     "pb mpkmb", "mpkmb dramaga", "pb mpkmb dramaga",
     "pb mpkmb, dramaga", "mpkmb, dramaga",
     "pbmpkmb", "mpkmbdramaga",
 ]
 
-# Ekstensi file gambar yang didukung
 SUPPORTED_EXTENSIONS = {'.pdf'}
 
-# ===================== FUNGSI PREPROCESSING =====================
-
 def preprocess_image(image):
-    """
-    Preprocessing gambar untuk meningkatkan akurasi OCR.
-    Menghasilkan beberapa versi preprocessed image.
-    """
+    
     results = []
 
-    # 1. Grayscale original
     if len(image.shape) == 3:
         gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     else:
         gray = image.copy()
     results.append(gray)
 
-    # 2. Adaptive threshold (baik untuk teks pada background yang tidak rata)
     adaptive = cv2.adaptiveThreshold(
         gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
         cv2.THRESH_BINARY, 11, 2
     )
     results.append(adaptive)
 
-    # 3. OTSU threshold (baik untuk teks kontras tinggi)
     _, otsu = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
     results.append(otsu)
 
-    # 4. Contrast enhancement (CLAHE)
     clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
     enhanced = clahe.apply(gray)
     results.append(enhanced)
 
     return results
 
-
 def resize_if_needed(image, max_dimension=1600):
-    """
-    Resize gambar jika terlalu besar untuk mempercepat proses OCR.
-    """
+    
     h, w = image.shape[:2]
     if max(h, w) > max_dimension:
         scale = max_dimension / max(h, w)
@@ -92,30 +64,20 @@ def resize_if_needed(image, max_dimension=1600):
         image = cv2.resize(image, (new_w, new_h), interpolation=cv2.INTER_AREA)
     return image
 
-
-# ===================== FUNGSI DETEKSI =====================
-
 def extract_text_ocr(reader, image):
-    """
-    Ekstraksi teks dari gambar menggunakan EasyOCR.
-    Mencoba beberapa versi preprocessed image untuk hasil terbaik.
-    """
+    
     all_texts = []
 
-    # Resize untuk mempercepat processing
     image = resize_if_needed(image)
 
-    # Dapatkan versi preprocessed
     preprocessed_images = preprocess_image(image)
 
-    # OCR pada gambar original (grayscale)
     try:
         results = reader.readtext(preprocessed_images[0], detail=0, paragraph=True)
         all_texts.extend(results)
     except Exception as e:
         pass
 
-    # Jika hasil kurang, coba versi enhanced contrast
     if len(all_texts) < 3:
         try:
             results = reader.readtext(preprocessed_images[3], detail=0, paragraph=True)
@@ -125,18 +87,12 @@ def extract_text_ocr(reader, image):
 
     return all_texts
 
-
 def decode_qr_codes(image):
-    """
-    Decode semua QR code yang ditemukan pada gambar.
-    Mengembalikan list string data dari QR code.
-    """
+    
     qr_data = []
 
-    # Resize untuk processing
     image = resize_if_needed(image)
 
-    # Dapatkan versi preprocessed
     preprocessed_images = preprocess_image(image)
 
     for preprocessed in preprocessed_images:
@@ -157,33 +113,22 @@ def decode_qr_codes(image):
 
     return list(set(qr_data))
 
-
 def check_gopay_recipient(texts, qr_data):
-    """
-    Cek apakah penerima pembayaran adalah GoPay.
-    Memastikan GoPay sebagai penerima, bukan pengirim.
-    Mencari di hasil OCR dan QR code data.
-    """
-    # Gabungkan semua teks menjadi satu string lowercase
+    
     combined_text = " ".join(texts).lower()
     combined_qr = " ".join(qr_data).lower()
     all_text = combined_text + " " + combined_qr
     
-    # Hapus spasi ganda yang mungkin terjadi
     cleaned_text = " ".join(all_text.split())
 
-    # 1. Cek dari frase exact match yang menunjukkan tujuan
     for keyword in GOPAY_RECEIVER_KEYWORDS:
         if keyword in cleaned_text:
             return True, keyword
 
-    # 2. Jika ada kata Gopay, cek konteks lebih lanjut
     is_gopay_present = any(g in cleaned_text for g in GOPAY_GENERAL)
     if is_gopay_present:
         is_sender = any(s in cleaned_text for s in GOPAY_SENDER_KEYWORDS)
         
-        # Jika bukan pengirim explisit yang mengandung kata gopay, 
-        # kita cek apakah ada indikator penerima di teks
         has_receiver_context = any(r in cleaned_text for r in ["penerima", "ditransfer ke", "tujuan"])
         has_sender_context = any(r in cleaned_text for r in ["pengirim", "dari", "sumber dana"])
         
@@ -192,20 +137,13 @@ def check_gopay_recipient(texts, qr_data):
 
     return False, None
 
-
 def check_mpkmb_text(texts, qr_data):
-    """
-    Cek apakah teks "PB MPKMB DRAMAGA" ada di bukti pembayaran.
-    Mencari di hasil OCR dan QR code data.
-    """
-    # Gabungkan semua teks
+    
     combined_text = " ".join(texts).lower()
     combined_qr = " ".join(qr_data).lower()
     all_text = combined_text + " " + combined_qr
 
-    # Hapus karakter spesial untuk fuzzy matching
     cleaned_text = all_text.replace(",", " ").replace(".", " ").replace("-", " ")
-    # Normalisasi spasi berlebih
     cleaned_text = " ".join(cleaned_text.split())
 
     for keyword in MPKMB_KEYWORDS:
@@ -214,13 +152,8 @@ def check_mpkmb_text(texts, qr_data):
 
     return False, None
 
-
-# ===================== FUNGSI UTAMA =====================
-
 def scan_images(input_folder):
-    """
-    Scan folder dan kembalikan daftar file gambar yang valid.
-    """
+    
     images = []
     for filename in os.listdir(input_folder):
         ext = os.path.splitext(filename)[1].lower()
@@ -228,29 +161,20 @@ def scan_images(input_folder):
             images.append(os.path.join(input_folder, filename))
     return sorted(images)
 
-
 def process_single_image(reader, file_path):
-    """
-    Proses satu file PDF dan cek apakah memenuhi kedua kriteria.
-    Mengekstrak teks langsung dari PDF dan merender per halaman ke gambar untuk OCR/QR.
-    Returns: (is_match, gopay_found, mpkmb_found, details)
-    """
+    
     try:
         doc = fitz.open(file_path)
         all_texts = []
         all_qr_data = []
 
-        # Loop setiap halaman
         for page_num in range(len(doc)):
             page = doc.load_page(page_num)
             
-            # 1. Ekstrak teks langsung dari PDF (jika ada)
             text = page.get_text()
             if text.strip():
                 all_texts.extend(text.split('\n'))
             
-            # 2. Render halaman ke gambar (untuk dicarikan OCR dan QR Code)
-            # dpi=150 cukup baik untuk kompromi performa dan kualitas OCR
             pix = page.get_pixmap(dpi=150)
             img = np.frombuffer(pix.samples, dtype=np.uint8).reshape(pix.h, pix.w, pix.n)
             
@@ -261,26 +185,20 @@ def process_single_image(reader, file_path):
             elif pix.n == 1: # GRAY
                 img = cv2.cvtColor(img, cv2.COLOR_GRAY2BGR)
 
-            # Ekstraksi teks OCR dari gambar hasil render PDF
             page_texts = extract_text_ocr(reader, img)
             all_texts.extend(page_texts)
 
-            # Decode QR codes
             page_qr_data = decode_qr_codes(img)
             all_qr_data.extend(page_qr_data)
 
         doc.close()
 
-        # Bersihkan empty string
         all_texts = [t for t in all_texts if t.strip()]
 
-        # Cek kriteria 1: GoPay sebagai penerima
         gopay_found, gopay_keyword = check_gopay_recipient(all_texts, all_qr_data)
 
-        # Cek kriteria 2: PB MPKMB DRAMAGA
         mpkmb_found, mpkmb_keyword = check_mpkmb_text(all_texts, all_qr_data)
 
-        # Detail hasil
         details = {
             "ocr_texts": all_texts,
             "qr_data": all_qr_data,
@@ -288,7 +206,6 @@ def process_single_image(reader, file_path):
             "mpkmb_keyword": mpkmb_keyword,
         }
 
-        # Gambar lolos jika SALAH SATU kriteria terpenuhi (GoPay ATAU MPKMB)
         is_match = gopay_found or mpkmb_found
 
         return is_match, gopay_found, mpkmb_found, details
@@ -296,27 +213,20 @@ def process_single_image(reader, file_path):
     except Exception as e:
         return False, False, False, f"Error: {str(e)}"
 
-
 def filter_images(input_folder, output_folder):
-    """
-    Fungsi utama: filter seluruh gambar di folder input.
-    Salin gambar yang lolos ke folder output.
-    """
+    
     print("=" * 60)
     print("  SISTEM FILTER BUKTI PEMBAYARAN GOPAY")
     print("  Kriteria: GoPay + PB MPKMB DRAMAGA")
     print("=" * 60)
     print()
 
-    # Validasi folder input
     if not os.path.isdir(input_folder):
         print(f"[ERROR] Folder input tidak ditemukan: {input_folder}")
         sys.exit(1)
 
-    # Buat folder output jika belum ada
     os.makedirs(output_folder, exist_ok=True)
 
-    # Scan gambar
     print(f"[INFO] Scanning folder: {input_folder}")
     image_files = scan_images(input_folder)
     total_images = len(image_files)
@@ -329,13 +239,11 @@ def filter_images(input_folder, output_folder):
     print(f"[INFO] Folder output: {output_folder}")
     print()
 
-    # Inisialisasi EasyOCR Reader (CPU mode)
     print("[INFO] Memuat model OCR (mungkin butuh waktu saat pertama kali)...")
     reader = easyocr.Reader(['id', 'en'], gpu=False, verbose=False)
     print("[INFO] Model OCR siap!")
     print()
 
-    # Proses setiap gambar
     matched_files = []
     gopay_only = []
     mpkmb_only = []
@@ -354,9 +262,7 @@ def filter_images(input_folder, output_folder):
         img_time = time.time() - img_start
 
         if is_match:
-            # Salin ke folder output
             dest_path = os.path.join(output_folder, filename)
-            # Hindari overwrite jika nama file sama
             if os.path.exists(dest_path):
                 name, ext = os.path.splitext(filename)
                 dest_path = os.path.join(output_folder, f"{name}_{idx}{ext}")
@@ -376,7 +282,6 @@ def filter_images(input_folder, output_folder):
         else:
             print(f"❌ Tidak cocok [{img_time:.1f}s]")
 
-    # Statistik akhir
     elapsed = time.time() - start_time
     minutes = int(elapsed // 60)
     seconds = int(elapsed % 60)
@@ -423,9 +328,6 @@ def filter_images(input_folder, output_folder):
     print("Selesai! 🎉")
 
     return matched_files
-
-
-# ===================== ENTRY POINT =====================
 
 if __name__ == "__main__":
     print()
