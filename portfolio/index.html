@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GoPay Payment Filter — Portfolio Project</title>
+    <meta name="description" content="Sistem otomatis filter bukti pembayaran GoPay menggunakan OCR dan QR Code detection. Dibangun dengan Python, EasyOCR, OpenCV.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Animated background -->
+    <div class="bg-grid"></div>
+    <div class="glow glow-1"></div>
+    <div class="glow glow-2"></div>
+    <div class="glow glow-3"></div>
+
+    <!-- Navigation -->
+    <nav class="navbar" id="navbar">
+        <div class="nav-container">
+            <a href="#" class="nav-logo">
+                <span class="logo-icon">⚡</span>
+                <span>PayFilter</span>
+            </a>
+            <div class="nav-links">
+                <a href="#overview">Overview</a>
+                <a href="#features">Features</a>
+                <a href="#architecture">Architecture</a>
+                <a href="#tech">Tech Stack</a>
+                <a href="#demo">Demo</a>
+                <a href="#contact">Contact</a>
+            </div>
+            <a href="https://github.com/YOUR_USERNAME/gopay-payment-filter" target="_blank" class="btn-github">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+                GitHub
+            </a>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero" id="hero">
+        <div class="hero-content">
+            <div class="hero-badge">🔍 Computer Vision • OCR • Automation</div>
+            <h1 class="hero-title">
+                <span class="gradient-text">GoPay Payment</span><br>
+                <span>Proof Filter System</span>
+            </h1>
+            <p class="hero-desc">
+                Sistem otomatis untuk memfilter ribuan bukti pembayaran menggunakan 
+                <strong>OCR</strong> dan <strong>QR Code detection</strong>. Telah memproses <strong>5.000+ file</strong> 
+                gambar & PDF, menghasilkan <strong>580 file terkurasi</strong> dengan akurasi ~95%.
+            </p>
+            <div class="hero-stats">
+                <div class="stat-card">
+                    <span class="stat-number" data-target="5000">0</span><span class="stat-plus">+</span>
+                    <span class="stat-label">Files Processed</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-number" data-target="580">0</span><span class="stat-plus"></span>
+                    <span class="stat-label">Curated Output</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-number" data-target="95">0</span><span class="stat-plus">%</span>
+                    <span class="stat-label">Accuracy Rate</span>
+                </div>
+            </div>
+            <div class="hero-actions">
+                <a href="#demo" class="btn btn-primary">
+                    <span>See Demo</span>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                </a>
+                <a href="#architecture" class="btn btn-secondary">
+                    <span>How It Works</span>
+                </a>
+            </div>
+        </div>
+        <div class="hero-visual">
+            <div class="terminal">
+                <div class="terminal-header">
+                    <div class="terminal-dots">
+                        <span class="dot red"></span>
+                        <span class="dot yellow"></span>
+                        <span class="dot green"></span>
+                    </div>
+                    <span class="terminal-title">filter_pembayaran.py</span>
+                </div>
+                <div class="terminal-body" id="terminal-output">
+                    <div class="term-line"><span class="term-prompt">$</span> python filter_pembayaran.py ./input ./output</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Overview -->
+    <section class="section" id="overview">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-tag">📋 The Problem</span>
+                <h2>Why This Project Exists</h2>
+                <p>Solving a real operational challenge at IPB University</p>
+            </div>
+            <div class="overview-grid">
+                <div class="overview-card problem">
+                    <div class="card-icon">😩</div>
+                    <h3>The Problem</h3>
+                    <p>Panitia MPKMB harus memverifikasi <strong>5.000+ bukti pembayaran</strong> (gambar & PDF) secara manual. Setiap file harus dicek satu per satu — apakah penerima GoPay? Apakah tujuan PB MPKMB DRAMAGA?</p>
+                    <div class="pain-points">
+                        <span>⏰ Memakan waktu berhari-hari</span>
+                        <span>😵 Rentan human error</span>
+                        <span>📱 Format gambar beragam</span>
+                    </div>
+                </div>
+                <div class="overview-card solution">
+                    <div class="card-icon">🚀</div>
+                    <h3>The Solution</h3>
+                    <p>Sistem otomatis yang menggunakan <strong>Computer Vision</strong> dan <strong>OCR</strong> untuk membaca teks dari 5.000+ bukti pembayaran, decode QR code, dan memfilter menjadi <strong>580 file terkurasi</strong> dengan akurasi ~95%.</p>
+                    <div class="pain-points success">
+                        <span>⚡ Proses otomatis dalam menit</span>
+                        <span>🎯 Akurasi tinggi dengan multi-pass OCR</span>
+                        <span>📄 Support gambar & PDF</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features -->
+    <section class="section section-dark" id="features">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-tag">✨ Features</span>
+                <h2>What It Can Do</h2>
+                <p>Built with robustness and accuracy in mind</p>
+            </div>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">🧠</div>
+                    <h3>Smart OCR Engine</h3>
+                    <p>Multi-pass OCR dengan 4 teknik preprocessing (Grayscale, Adaptive Threshold, OTSU, CLAHE) untuk akurasi maksimal</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">📱</div>
+                    <h3>QR Code Detection</h3>
+                    <p>Decode QR code dari bukti pembayaran untuk validasi tambahan menggunakan pyzbar</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🎯</div>
+                    <h3>Context-Aware</h3>
+                    <p>Membedakan GoPay sebagai pengirim vs penerima untuk menghindari false positive</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">📄</div>
+                    <h3>Multi-Format</h3>
+                    <p>Support JPG, PNG, BMP, TIFF, WebP dan PDF dengan rendering halaman ke gambar</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">⚡</div>
+                    <h3>Batch Processing</h3>
+                    <p>Proses ratusan file sekaligus dengan progress tracking dan estimasi waktu</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">📊</div>
+                    <h3>Detailed Report</h3>
+                    <p>Laporan lengkap dengan kategorisasi: cocok, hanya GoPay, hanya MPKMB, error</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Architecture -->
+    <section class="section" id="architecture">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-tag">🏗️ Architecture</span>
+                <h2>How It Works</h2>
+                <p>Pipeline processing dari input hingga output</p>
+            </div>
+            <div class="pipeline">
+                <div class="pipeline-step">
+                    <div class="step-number">01</div>
+                    <div class="step-content">
+                        <h3>📂 Input Scanning</h3>
+                        <p>Scan folder input, identifikasi file gambar/PDF yang valid berdasarkan ekstensi</p>
+                    </div>
+                </div>
+                <div class="pipeline-connector"></div>
+                <div class="pipeline-step">
+                    <div class="step-number">02</div>
+                    <div class="step-content">
+                        <h3>🔧 Image Preprocessing</h3>
+                        <p>4 teknik: Grayscale → Adaptive Threshold → OTSU → CLAHE Enhancement</p>
+                    </div>
+                </div>
+                <div class="pipeline-connector"></div>
+                <div class="pipeline-step">
+                    <div class="step-number">03</div>
+                    <div class="step-content">
+                        <h3>🔍 Text Extraction</h3>
+                        <p>EasyOCR (Indonesian + English) + pyzbar QR decode secara paralel</p>
+                    </div>
+                </div>
+                <div class="pipeline-connector"></div>
+                <div class="pipeline-step">
+                    <div class="step-number">04</div>
+                    <div class="step-content">
+                        <h3>🎯 Keyword Matching</h3>
+                        <p>Context-aware matching: GoPay receiver detection + PB MPKMB DRAMAGA validation</p>
+                    </div>
+                </div>
+                <div class="pipeline-connector"></div>
+                <div class="pipeline-step">
+                    <div class="step-number">05</div>
+                    <div class="step-content">
+                        <h3>📤 Output & Report</h3>
+                        <p>Copy file yang lolos, generate laporan statistik lengkap</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Tech Stack -->
+    <section class="section section-dark" id="tech">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-tag">🛠️ Tech Stack</span>
+                <h2>Technologies Used</h2>
+                <p>Built with industry-standard tools</p>
+            </div>
+            <div class="tech-grid">
+                <div class="tech-card">
+                    <div class="tech-logo">🐍</div>
+                    <h3>Python</h3>
+                    <p>Core language</p>
+                </div>
+                <div class="tech-card">
+                    <div class="tech-logo">👁️</div>
+                    <h3>OpenCV</h3>
+                    <p>Image processing</p>
+                </div>
+                <div class="tech-card">
+                    <div class="tech-logo">📝</div>
+                    <h3>EasyOCR</h3>
+                    <p>Text recognition</p>
+                </div>
+                <div class="tech-card">
+                    <div class="tech-logo">📱</div>
+                    <h3>pyzbar</h3>
+                    <p>QR code reader</p>
+                </div>
+                <div class="tech-card">
+                    <div class="tech-logo">📄</div>
+                    <h3>PyMuPDF</h3>
+                    <p>PDF processing</p>
+                </div>
+                <div class="tech-card">
+                    <div class="tech-logo">🖼️</div>
+                    <h3>Pillow</h3>
+                    <p>Image handling</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Code Demo -->
+    <section class="section" id="demo">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-tag">💻 Code Demo</span>
+                <h2>See The Code</h2>
+                <p>Key functions from the filtering system</p>
+            </div>
+            <div class="code-tabs">
+                <button class="code-tab active" data-tab="preprocessing">Preprocessing</button>
+                <button class="code-tab" data-tab="detection">Detection</button>
+                <button class="code-tab" data-tab="matching">Matching</button>
+            </div>
+            <div class="code-panels">
+                <div class="code-panel active" id="panel-preprocessing">
+                    <div class="code-block">
+                        <div class="code-header">
+                            <span>filter_pembayaran.py — preprocess_image()</span>
+                            <button class="copy-btn" onclick="copyCode(this)">📋 Copy</button>
+                        </div>
+                        <pre><code><span class="kw">def</span> <span class="fn">preprocess_image</span>(image):
+    results = []
+
+    <span class="cm"># 1. Grayscale</span>
+    <span class="kw">if</span> len(image.shape) == <span class="num">3</span>:
+        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    <span class="kw">else</span>:
+        gray = image.copy()
+    results.append(gray)
+
+    <span class="cm"># 2. Adaptive Threshold</span>
+    adaptive = cv2.adaptiveThreshold(
+        gray, <span class="num">255</span>, cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
+        cv2.THRESH_BINARY, <span class="num">11</span>, <span class="num">2</span>)
+    results.append(adaptive)
+
+    <span class="cm"># 3. OTSU Threshold</span>
+    _, otsu = cv2.threshold(
+        gray, <span class="num">0</span>, <span class="num">255</span>,
+        cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+    results.append(otsu)
+
+    <span class="cm"># 4. CLAHE Enhancement</span>
+    clahe = cv2.createCLAHE(
+        clipLimit=<span class="num">2.0</span>, tileGridSize=(<span class="num">8</span>, <span class="num">8</span>))
+    enhanced = clahe.apply(gray)
+    results.append(enhanced)
+
+    <span class="kw">return</span> results</code></pre>
+                    </div>
+                </div>
+                <div class="code-panel" id="panel-detection">
+                    <div class="code-block">
+                        <div class="code-header">
+                            <span>filter_pembayaran.py — extract_text_ocr()</span>
+                            <button class="copy-btn" onclick="copyCode(this)">📋 Copy</button>
+                        </div>
+                        <pre><code><span class="kw">def</span> <span class="fn">extract_text_ocr</span>(reader, image):
+    all_texts = []
+    image = resize_if_needed(image)
+    preprocessed = preprocess_image(image)
+
+    <span class="cm"># OCR on grayscale</span>
+    <span class="kw">try</span>:
+        results = reader.readtext(
+            preprocessed[<span class="num">0</span>],
+            detail=<span class="num">0</span>, paragraph=<span class="kw">True</span>)
+        all_texts.extend(results)
+    <span class="kw">except</span> Exception:
+        <span class="kw">pass</span>
+
+    <span class="cm"># Fallback: enhanced contrast</span>
+    <span class="kw">if</span> len(all_texts) < <span class="num">3</span>:
+        <span class="kw">try</span>:
+            results = reader.readtext(
+                preprocessed[<span class="num">3</span>],
+                detail=<span class="num">0</span>, paragraph=<span class="kw">True</span>)
+            all_texts.extend(results)
+        <span class="kw">except</span> Exception:
+            <span class="kw">pass</span>
+
+    <span class="kw">return</span> all_texts</code></pre>
+                    </div>
+                </div>
+                <div class="code-panel" id="panel-matching">
+                    <div class="code-block">
+                        <div class="code-header">
+                            <span>filter_pembayaran.py — check_gopay_recipient()</span>
+                            <button class="copy-btn" onclick="copyCode(this)">📋 Copy</button>
+                        </div>
+                        <pre><code><span class="kw">def</span> <span class="fn">check_gopay_recipient</span>(texts, qr_data):
+    combined = <span class="str">" "</span>.join(texts).lower()
+    qr_text = <span class="str">" "</span>.join(qr_data).lower()
+    all_text = <span class="str">" "</span>.join(
+        (combined + <span class="str">" "</span> + qr_text).split())
+
+    <span class="cm"># 1. Exact phrase matching</span>
+    <span class="kw">for</span> kw <span class="kw">in</span> GOPAY_RECEIVER_KEYWORDS:
+        <span class="kw">if</span> kw <span class="kw">in</span> all_text:
+            <span class="kw">return True</span>, kw
+
+    <span class="cm"># 2. Context-aware detection</span>
+    has_gopay = <span class="kw">any</span>(
+        g <span class="kw">in</span> all_text
+        <span class="kw">for</span> g <span class="kw">in</span> GOPAY_GENERAL)
+    <span class="kw">if</span> has_gopay:
+        is_sender = <span class="kw">any</span>(
+            s <span class="kw">in</span> all_text
+            <span class="kw">for</span> s <span class="kw">in</span> GOPAY_SENDER_KEYWORDS)
+        has_recv = <span class="kw">any</span>(
+            r <span class="kw">in</span> all_text
+            <span class="kw">for</span> r <span class="kw">in</span> [<span class="str">"penerima"</span>,
+                <span class="str">"ditransfer ke"</span>, <span class="str">"tujuan"</span>])
+        <span class="kw">if</span> has_recv <span class="kw">and not</span> is_sender:
+            <span class="kw">return True</span>, <span class="str">"gopay (context)"</span>
+
+    <span class="kw">return False</span>, <span class="kw">None</span></code></pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Contact -->
+    <section class="section section-dark" id="contact">
+        <div class="container">
+            <div class="contact-content">
+                <h2>Interested in This Project?</h2>
+                <p>Feel free to reach out or check the full source code on GitHub</p>
+                <div class="contact-links">
+                    <a href="https://github.com/Nipebrian" class="contact-link" target="_blank">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+                        GitHub
+                    </a>
+                    <a href="https://linkedin.com/in/hanif-febrian-3a9688260/" class="contact-link" target="_blank">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
+                        LinkedIn
+                    </a>
+                    <a href="mailto:hanif.brian05@gmail.com" class="contact-link">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+                        Email
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <p>Made with ❤️ for MPKMB IPB University &copy; 2026</p>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>
